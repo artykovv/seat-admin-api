@@ -14,7 +14,7 @@ from models import Row, Seat, SeatStatus, SeatProjectStatus, ProjectDate, Sectio
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 @router.post("/", response_model=ProjectResponse)
-async def create_project(data: ProjectCreate, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(active=True))):
+async def create_project(data: ProjectCreate, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(is_superuser=True))):
     return await ProjectCRUD.create(data, session)
 
 @router.get("/{project_id}", response_model=ProjectResponse)
@@ -26,11 +26,11 @@ async def get_projects(session: AsyncSession = Depends(get_async_session)):
     return await ProjectCRUD.get(session)
 
 @router.put("/{project_id}", response_model=ProjectResponse)
-async def update_project(project_id: int, data: ProjectUpdate, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(active=True))):
+async def update_project(project_id: int, data: ProjectUpdate, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(is_superuser=True))):
     return await ProjectCRUD.update(project_id, data, session)
 
 @router.delete("/{project_id}")
-async def delete_project(project_id: int, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(active=True))):
+async def delete_project(project_id: int, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(is_superuser=True))):
     return await ProjectCRUD.delete(project_id, session)
 
 @router.get("/seats/")

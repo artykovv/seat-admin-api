@@ -10,7 +10,7 @@ from typing import List
 router = APIRouter(prefix="/sections", tags=["sections"])
 
 @router.post("/", response_model=SectionResponse)
-async def create_section(data: SectionCreate, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(active=True))):
+async def create_section(data: SectionCreate, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(is_superuser=True))):
     return await SectionCRUD.create(data, session)
 
 @router.get("/{section_id}", response_model=SectionResponse)
@@ -22,9 +22,9 @@ async def get_sections(session: AsyncSession = Depends(get_async_session)):
     return await SectionCRUD.get(session)
 
 @router.put("/{section_id}", response_model=SectionResponse)
-async def update_section(section_id: int, data: SectionUpdate, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(active=True))):
+async def update_section(section_id: int, data: SectionUpdate, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(is_superuser=True))):
     return await SectionCRUD.update(section_id, data, session)
 
 @router.delete("/{section_id}")
-async def delete_section(section_id: int, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(active=True))):
+async def delete_section(section_id: int, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(is_superuser=True))):
     return await SectionCRUD.delete(section_id, session)
