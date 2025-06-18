@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String, Table, UniqueConstraint
+from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String, Table, UniqueConstraint, Boolean
 from sqlalchemy.orm import relationship
 from config.base import Base
 
@@ -14,6 +14,10 @@ class Project(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
+
+    poster_url = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+
     dates = relationship("ProjectDate", back_populates="project")
     floors = relationship("Floor", secondary=floor_projects, back_populates="projects")
 

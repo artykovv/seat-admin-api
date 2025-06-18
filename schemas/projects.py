@@ -5,6 +5,7 @@ from datetime import datetime
 class ProjectBase(BaseModel):
     name: str
     description: Optional[str] = None
+    poster_url: Optional[str] = None
 
 class ProjectCreate(ProjectBase):
     pass
