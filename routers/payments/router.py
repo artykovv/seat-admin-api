@@ -9,7 +9,7 @@ from auth.fastapi_users_instance import fastapi_users
 router = APIRouter(prefix="/payments", tags=["payments"])
 
 @router.post("/payment-methods/")
-async def create_payment_method(name: str, code: str, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(is_superuser=True))):
+async def create_payment_method(name: str, code: str, session: AsyncSession = Depends(get_async_session), current_user: User = Depends(fastapi_users.current_user(superuser=True))):
     pm = await PaymentMethodCRUD.create(session, name, code)
     return pm
 

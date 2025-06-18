@@ -23,7 +23,7 @@ class CreateTicketRequest(BaseModel):
 async def create_ticket(
     request: CreateTicketRequest,
     session: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(fastapi_users.current_user(is_superuser=True)),
+    current_user: User = Depends(fastapi_users.current_user(superuser=True)),
 ):
     # 1. Проверяем Project и ProjectDate
     result = await session.execute(
