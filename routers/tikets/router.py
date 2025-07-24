@@ -1,24 +1,14 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from config.database import get_async_session
-from models import Ticket, Client, Project, ProjectDate, Payment, Seat, Row, Section
+from models import Ticket, Client, Project, ProjectDate, Payment, Seat, Row, Section, SeatProjectStatus, ticket_seats, User
 from typing import Optional
-from pydantic import BaseModel
 from sqlalchemy.orm import joinedload
+from auth.fastapi_users_instance import fastapi_users
+from schemas.tikets import TicketResponse
 
 router = APIRouter(prefix="/tickets", tags=["Tickets"])
-class TicketResponse(BaseModel):
-    id: int
-    client_full_name: str
-    client_phone_number: str
-    project_name: str
-    project_id: int
-    project_date_id: int
-    project_date: str
-    payment_status: Optional[str]
-    amount: Optional[int]
-    seats: list[dict]
 
 @router.get("/search", response_model=list[TicketResponse])
 async def search_tickets(
@@ -66,6 +56,7 @@ async def search_tickets(
                 "floor_name": seat.row.section.floor.name if seat.row and seat.row.section and seat.row.section.floor else "N/A",
                 "row_number": seat.row.number if seat.row else "N/A",
                 "seat_number": seat.number,
+                "seat_id": seat.id,
                 "price": float(seat.category.price) if seat.category else 0.0
             }
             for seat in ticket.seats
@@ -84,3 +75,76 @@ async def search_tickets(
         })
 
     return response
+
+# 
+@router.delete("/tiket")
+async def delete_ticket(
+    ticket_id: int,
+    session: AsyncSession = Depends(get_async_session),
+    current_user: User = Depends(fastapi_users.current_user(superuser=True))
+):
+    # Найти билет
+    ticket = await session.get(Ticket, ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    # Получаем связанные места и project_date_id
+    seat_rows = await session.execute(
+        select(ticket_seats.c.seat_id, ticket_seats.c.project_date_id)
+        .where(ticket_seats.c.ticket_id == ticket_id)
+    )
+    rows = seat_rows.all()
+    seat_ids = [r[0] for r in rows]
+    project_date_ids = list(set(r[1] for r in rows))
+
+    # Удаляем сам билет (удалит и из ticket_seats)
+    await session.delete(ticket)
+
+    # Удаляем статусы мест по каждому project_date_id
+    for pd_id in project_date_ids:
+        await session.execute(
+            delete(SeatProjectStatus).where(
+                SeatProjectStatus.project_date_id == pd_id,
+                SeatProjectStatus.seat_id.in_(seat_ids)
+            )
+        )
+
+    await session.commit()
+    return {
+        "massage": "Успешно удалено"
+    }
+
+@router.delete("/tikets/seats")
+async def remove_seats_from_ticket(
+    ticket_id: int, 
+    seat_ids: list[int], 
+    project_date_id: int, 
+    session: AsyncSession = Depends(get_async_session),
+    current_user: User = Depends(fastapi_users.current_user(superuser=True))
+):
+    # Проверка на существование билета
+    ticket = await session.get(Ticket, ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    # Удаляем связи из ticket_seats
+    await session.execute(
+        delete(ticket_seats).where(
+            ticket_seats.c.ticket_id == ticket_id,
+            ticket_seats.c.project_date_id == project_date_id,
+            ticket_seats.c.seat_id.in_(seat_ids)
+        )
+    )
+
+    # Удаляем статусы мест
+    await session.execute(
+        delete(SeatProjectStatus).where(
+            SeatProjectStatus.project_date_id == project_date_id,
+            SeatProjectStatus.seat_id.in_(seat_ids)
+        )
+    )
+
+    await session.commit()
+    return {
+        "massage": "Успешно удалено"
+    }

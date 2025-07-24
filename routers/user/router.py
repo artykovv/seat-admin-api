@@ -1,15 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from auth.fastapi_users_instance import fastapi_users
 from auth.auth import auth_backend
-from schemas.user import UserRead, UserCreate, UserUpdate
+from schemas.user import UserRead, UserCreate
 from services.user import UserService
 from config.database import get_async_session
 from models import User
-from uuid import UUID
-
-from auth.fastapi_users_instance import fastapi_users
-from auth.auth import auth_backend
 
 from schemas.user import UserRead, UserCreate
 
